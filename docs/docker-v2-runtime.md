@@ -108,6 +108,35 @@ the container inherits exactly the job's confinement:
   eviction — after a run, the oldest cached rootfs tars (by creation time) are
   removed until the cache is back under the cap.
 
+## Private registry authentication (`sandbox_registry_auth`)
+
+To pull a private image with `# sandbox <image>`, open **Instance settings →
+Sandbox registry auth** and paste a Docker/Podman `config.json` / `auth.json`
+object. For example:
+
+```json
+{
+  "auths": {
+    "registry.example.com": {
+      "auth": "BASE64_OF_USERNAME_COLON_PASSWORD"
+    }
+  }
+}
+```
+
+Replace the placeholder with Base64 of `username:password` (or a registry
+access token in place of the password). The registry host, including any port,
+must match the host used in `# sandbox registry.example.com/team/image:tag`.
+**Base64 is encoding, not encryption**: use a pull-only token if possible and
+protect access to the instance setting.
+
+Windmill writes this JSON to `{job_dir}/.docker/config.json` with file mode
+`0600`, sets `DOCKER_CONFIG` for `crane` to pull the image, and removes the
+per-job directory when the job is cleaned up. This configuration is separate
+from Kubernetes `imagePullSecrets`; it is also distinct from the **Docker
+registries** setting used by sandbox snapshot builds, which accepts an array of
+`{registry, username, password}` entries.
+
 ## Requirements
 
 - [`crane`](https://github.com/google/go-containerregistry) and `tar` on the worker
